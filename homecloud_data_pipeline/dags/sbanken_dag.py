@@ -1,7 +1,6 @@
+from typing import List
 import logging
-import json
-from pprint import pp
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
@@ -32,7 +31,6 @@ def sbanken_etl():
             fetch_cards,
             fetch_customer,
         )
-
         raw_datafolder = "data/0-raw/sbanken_etl"
 
         client_id = Variable.get("SBANKEN_CLIENT_ID")
@@ -62,8 +60,8 @@ def sbanken_etl():
         }
 
     @task()
-    def extract_transactions(account_ids):
-        """Fetch archived transactions for the given day"""
+    def extract_transactions(account_ids: List[str]):
+        """Fetch archived transactions for the given accounts"""
         from homecloud_data_pipeline.common.sbanken_api import (
             store_raw_data,
             get_oauth_session,
