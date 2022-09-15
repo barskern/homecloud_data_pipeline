@@ -53,6 +53,11 @@ def get_oauth_session(client_id: str, client_secret: str):
     return oauth
 
 
+class QueryError(Exception):
+    """Unable to query SBanken API"""
+    pass
+
+
 def query_or_cache(
     oauth: OAuth2Session, name: str, url: str, params: Optional[Dict[str, str]] = None
 ):
@@ -74,9 +79,7 @@ def query_or_cache(
                 f"Fetched data for '{name}' from API and cached it to '{filepath}'"
             )
         else:
-            logger.error(result.status_code)
-            logger.error(result.text)
-            exit(1)
+            raise QueryError(f"{result.status_code}: {result.text}")
 
     return data
 
@@ -149,44 +152,3 @@ def store_raw_data(
     logger.info(f"Stored '{name}' data to '{filepath}'")
 
     return filepath
-
-
-# start_date = date(2021, 11, 1)
-# execution_date = date.today()
-# oauth = get_oauth_session(CLIENT_ID, CLIENT_SECRET)
-# 
-# execution_date_s = execution_date.isoformat()
-# 
-# accounts = query_or_cache(oauth, "accounts", f"{API_URL}/api/v2/Accounts")
-# store_raw_data(accounts, f"accounts-{execution_date_s}", RAW_DATA_FOLDER)
-# logger.info(f"Found {accounts['availableItems']} accounts")
-# 
-# cards = query_or_cache(oauth, "cards", f"{API_URL}/api/v2/Cards")
-# store_raw_data(cards, f"cards-{execution_date_s}", RAW_DATA_FOLDER)
-# logger.info(f"Found {cards['availableItems']} cards")
-# 
-# customer = query_or_cache(oauth, "customer", f"{API_URL}/api/v2/Customers")
-# store_raw_data(customer, f"customer-{execution_date_s}", RAW_DATA_FOLDER)
-# logger.info(f"Found customer {customer['customerId']}")
-# 
-# query_date = start_date
-# for _ in range(3):
-#     for account in accounts["items"]:
-#         account_id = account["accountId"]
-# 
-#         transactions = fetch_transactions_for_account(
-#             oauth, account_id, query_date, query_date
-#         )
-#         store_raw_data(
-#             transactions,
-#             account_id,
-#             RAW_DATA_FOLDER,
-#             subfolders=[
-#                 "transactions",
-#                 f"{query_date.year:04d}",
-#                 f"{query_date.month:02d}",
-#                 f"{query_date.day:02d}",
-#             ],
-#         )
-# 
-#     query_date = query_date + timedelta(days=1)
