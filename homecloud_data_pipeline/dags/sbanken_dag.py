@@ -38,19 +38,19 @@ def sbanken_etl():
         oauth = get_oauth_session(client_id, client_secret)
 
         context = get_current_context()
-        execution_date = context["execution_date"]
+        logical_date = context["logical_date"]
 
-        accounts = fetch_accounts(oauth, execution_date)
+        accounts = fetch_accounts(oauth, logical_date)
         accounts_path = store_raw_data(
-            accounts, f"accounts-{execution_date.to_date_string()}", raw_datafolder
+            accounts, f"accounts-{logical_date.to_date_string()}", raw_datafolder
         )
-        cards = fetch_cards(oauth, execution_date)
+        cards = fetch_cards(oauth, logical_date)
         cards_path = store_raw_data(
-            cards, f"cards-{execution_date.to_date_string()}", raw_datafolder
+            cards, f"cards-{logical_date.to_date_string()}", raw_datafolder
         )
-        customer = fetch_customer(oauth, execution_date)
+        customer = fetch_customer(oauth, logical_date)
         customer_path = store_raw_data(
-            customer, f"customer-{execution_date.to_date_string()}", raw_datafolder
+            customer, f"customer-{logical_date.to_date_string()}", raw_datafolder
         )
         return {
             "account_ids": [account["accountId"] for account in accounts["items"]],
