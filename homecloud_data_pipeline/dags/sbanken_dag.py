@@ -53,7 +53,9 @@ def extract_metadata(
     }
 
 
-@task()
+@task(
+    name="Extract transactions for a day"
+)
 def extract_transactions_for_day(
     oauth: OAuth2Session, account_ids: List[str], query_date: pendulum.Date
 ):
