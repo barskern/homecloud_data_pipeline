@@ -46,6 +46,7 @@ def get_oauth_session(client_id: str, client_secret: str):
             url="https://auth.sbanken.no/identityserver/connect/token",
         )
 
+        os.makedirs(CACHE_FOLDER, exist_ok=True)
         with open(token_filename, "w") as file:
             json.dump(token, file)
         logger.info(f"Dumped new token to '{token_filename}'")

@@ -2,24 +2,23 @@ from typing import List
 import logging
 from datetime import datetime, timedelta
 
-from airflow.decorators import dag, task
+from airflow.decorators import task, dag
 from airflow.operators.python import get_current_context
-from airflow.models import Variable
-
-# from homecloud_data_pipeline.common.workday import AfterWorkdayTimetable
-# from airflow.example_dags.plugins.workday import AfterWorkdayTimetable
+from airflow.models.variable import Variable
+from airflow.sensors.date_time import DateTimeSensor
+from airflow.utils.dates import days_ago
 
 logger = logging.getLogger(__name__)
 
 
 @dag(
-    start_date=datetime(2020, 1, 1),
+    #start_date=datetime(2020, 1, 1),
+    start_date=days_ago(1),
     schedule_interval="@daily",
-    # timetable=AfterWorkdayTimetable(),
 )
 def sbanken_etl():
     @task(multiple_outputs=True)
-    def extract_metadata():
+    def extract_metadata(_):
         """
         Fetch data which is not time dependent, but we store them in a
         'time-dependent' way to be able to see changes etc.
@@ -38,19 +37,19 @@ def sbanken_etl():
         oauth = get_oauth_session(client_id, client_secret)
 
         context = get_current_context()
-        execution_date = context["execution_date"]
+        logical_date = context["logical_date"]
 
-        accounts = fetch_accounts(oauth, execution_date)
+        accounts = fetch_accounts(oauth, logical_date)
         accounts_path = store_raw_data(
-            accounts, f"accounts-{execution_date.to_date_string()}", raw_datafolder
+            accounts, f"accounts-{logical_date.to_date_string()}", raw_datafolder
         )
-        cards = fetch_cards(oauth, execution_date)
+        cards = fetch_cards(oauth, logical_date)
         cards_path = store_raw_data(
-            cards, f"cards-{execution_date.to_date_string()}", raw_datafolder
+            cards, f"cards-{logical_date.to_date_string()}", raw_datafolder
         )
-        customer = fetch_customer(oauth, execution_date)
+        customer = fetch_customer(oauth, logical_date)
         customer_path = store_raw_data(
-            customer, f"customer-{execution_date.to_date_string()}", raw_datafolder
+            customer, f"customer-{logical_date.to_date_string()}", raw_datafolder
         )
         return {
             "account_ids": [account["accountId"] for account in accounts["items"]],
@@ -108,8 +107,14 @@ def sbanken_etl():
     def load():
         pass
 
-    metadata = extract_metadata()
+    wait_for_archive = DateTimeSensor(
+        task_id="wait_for_archived_transactions",
+        target_time="{{ logical_date + macros.timedelta(days=7) }}",
+    )
+
+    metadata = extract_metadata(wait_for_archive.output)
     extract_transactions(metadata['account_ids'])
+
 
 
 sbanken_dag = sbanken_etl()
